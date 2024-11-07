@@ -1,4 +1,11 @@
-.row-0, .row-1, .row-2 {
+body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+
+    align-items: center;
+}
+.row {
     display: flex;
 }
 

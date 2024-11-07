@@ -1,36 +1,3 @@
-// ** CONTROLLER
-const displayController = (function() {
-    const turnDisplay = document.querySelector(".turn");
-    const boardDiv = document.querySelector(".board");
-
-    function drawRow(rowIndex) {
-        const rowDiv = document.createElement("div");
-        rowDiv.classList.add("row-" + rowIndex);
-        boardDiv.appendChild(rowDiv);
-        return rowDiv;
-    }
-
-    function drawCell(rowDiv, col) {
-        const cellEle = document.createElement("div");
-        cellEle.classList.add("cell");
-        cellEle.dataset.col = col;
-        rowDiv.appendChild(cellEle);
-    }
-
-    function displayTurn(playerName) {
-        turnDisplay.textContent = playerName + "'s turn to move!";
-    }
-
-    function drawMarker(row, col, marker) {
-        targetRow = document.querySelector(".row-" + row);
-        targetCell = targetRow.children[col];
-        targetCell.textContent = marker;
-    }
-
-    return { drawRow, drawCell, displayTurn, drawMarker };
-})();
-
-
 // ** BOARD
 const gameBoard = (function() {
     const rows = 3;
@@ -39,11 +6,8 @@ const gameBoard = (function() {
 
     for (let i = 0; i < rows; i++) {
         board[i] = [];
-        // create rowDiv and returning it back to this function, to be passed into drawCell()
-        rowDiv = displayController.drawRow(i);
         for (let j = 0; j < columns; j++) {
             board[i].push(Cell());
-            displayController.drawCell(rowDiv, j);
         }
     }
 
@@ -73,6 +37,72 @@ function Player(name, marker) {
 }
 
 
+// ** DISPLAY CONTROLLER
+const displayController = (function() {
+    const game = gameController();
+    const board = gameBoard.getBoard();
+    
+    const turnDisplay = document.querySelector(".turn");
+    const boardDiv = document.querySelector(".board");
+
+    const initDisplayMessage = (function() {
+        displayTurn(game.getActivePlayer().getName());
+    })();
+    
+    const initBoard = (function() {
+        for (let i = 0; i < board.length; i++) {
+            rowDiv = drawRow(i);
+            for (let j = 0; j < board[i].length; j++) {
+                drawCell(rowDiv, j);
+            }
+        }
+    })();
+
+    function drawRow(rowIndex) {
+        const rowDiv = document.createElement("div");
+        rowDiv.classList.add("row");
+        rowDiv.id = "r" + rowIndex;
+        boardDiv.appendChild(rowDiv);
+        return rowDiv;
+    }
+
+    function drawCell(rowDiv, col) {
+        const cellEle = document.createElement("div");
+        cellEle.classList.add("cell", "onclick=getPlayerMove()");
+        cellEle.dataset.col = col;
+        rowDiv.appendChild(cellEle);
+    }
+
+    function clickHandlerBoard(e) {
+        rowInt = e.target.parentElement.id.slice(-1);
+        colInt = e.target.dataset.col;
+
+        game.playGame(rowInt, colInt);
+    } 
+
+    function displayTurn(playerName) {
+        turnDisplay.textContent = playerName + "'s turn to move!";
+    }
+
+    function drawMarker(row, col, marker) {
+        targetRow = document.querySelector("#r" + row);
+        targetCell = targetRow.children[col];
+        targetCell.textContent = marker;
+    }
+
+    function announceWinner() {
+        turnDisplay.textContent = "Congratulations " + game.getActivePlayer().getName() + ", you just owned!";
+    }
+
+    function announceOutOfMove() {
+        turnDisplay.textContent = "Out of moves! Game is tied.";
+    }
+
+    boardDiv.addEventListener("click", clickHandlerBoard);
+    return { displayTurn, drawMarker, announceWinner, announceOutOfMove };
+})();
+
+
 // ** CONTROLLER
 function gameController() {
     const playerOne = Player("PlayerOne", "X");
@@ -93,42 +123,29 @@ function gameController() {
     let selectedRow;
     let selectedCol;
 
-    function playGame() {
+    const getActivePlayer = () => activePlayer;
+
+    function playGame(row, col) {
         // get move from player
-        // todo: to replace setPlayerMove to be web interactive
-        [selectedRow, selectedCol] = setPlayerMove();
+        selectedRow = Number(row);
+        selectedCol = Number(col);
         let selectedCell = board[selectedRow][selectedCol];
 
         // check if the target cell is available (is there a marker already on it?)
         // if cell not available, re-prompt for another input
         if (selectedCell.getValue() !== null) {
-            alert(`That slot has been filled,`, activePlayer.getName(), ` please pick another one!`);
-            // todo: to replace setPlayerMove to be web interactive
-            [selectedRow, selectedCol] = setPlayerMove();
-            selectedCell = board[selectedRow][selectedCol];
+            alert(`This cell is taken, ` + activePlayer.getName() + `, please pick another one!`);
+            return;
         }   
 
-        // Drop the player's marker on the cell
-        // todo: to consolidate both adding into database (Cell class) and 
-        // todo: drawing marker (dispayController class) on HTML into a single method
         dropMarker(selectedCell);
         
-        // check for win condition via checkWinCondition
         if (gameOver()) {
-            console.log("Game Over!");
             return;
         }
 
         // if not won yet, switch player turn
-        switchTurn();
-
-        playGame();   
-    }
-
-    function setPlayerMove() {
-        const selectedRow = Number(prompt(activePlayer.getName() + ", it's your turn! Pick your row #"));
-        const selectedCol = Number(prompt("Pick your column #"));
-        return [selectedRow, selectedCol];
+        switchTurn(); 
     }
 
     function dropMarker(targetCell) {
@@ -147,14 +164,14 @@ function gameController() {
         // three in a row
         let gameWon = checkWinCombination();
         if (gameWon) {
-            announceWinner();
+            displayController.announceWinner();
             return true;
         }
         
         // check if out of moves
         var outOfMoves = checkAvailableMove(); 
         if (outOfMoves) {
-            announceOutOfMove();
+            displayController.announceOutOfMove();
             return true;
         }
 
@@ -206,7 +223,6 @@ function gameController() {
 
             for (let j = 0; j < combination.length; j++) {
                 let cellVal = combination[j].getValue();
-                console.log("cell value: ", cellVal);
                 // if cell's value is not equal to the current player's marker, means no streak! 
                 if (cellVal !==  playerMarker) {
                     break;
@@ -231,14 +247,5 @@ function gameController() {
         return true;
     }
 
-    // todo: to get displayController to congratulary message
-    function announceWinner() {
-        alert("Congratulations " + activePlayer.getName() + ", you just owned!");
-    }
-
-    return { playGame };
+    return { playGame, getActivePlayer };
 }
-
-
-game = gameController();
-game.playGame();
