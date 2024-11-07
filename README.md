@@ -2,7 +2,7 @@
 
 A basic web interactive tic tac toe game.
 
-[Live demo] -> TBD
+[Live demo] -> https://zephyremix.github.io/tic-tac-toe-JS/
 
 ## Functionality
 
