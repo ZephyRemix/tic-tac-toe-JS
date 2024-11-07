@@ -91,11 +91,13 @@ const displayController = (function() {
     }
 
     function announceWinner() {
-        turnDisplay.textContent = "Congratulations " + game.getActivePlayer().getName() + ", you just owned!";
+        turnDisplay.textContent = "Congratulations " + game.getActivePlayer().getName() + ", you just owned! 😎";
+        turnDisplay.style.color = "#339933";
     }
 
     function announceOutOfMove() {
-        turnDisplay.textContent = "Out of moves! Game is tied.";
+        turnDisplay.textContent = "Out of moves! It's a tie.";
+        turnDisplay.style.color = "#ff4d4d";
     }
 
     boardDiv.addEventListener("click", clickHandlerBoard);
