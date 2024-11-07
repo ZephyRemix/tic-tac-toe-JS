@@ -1,3 +1,37 @@
+// ** CONTROLLER
+const displayController = (function() {
+    const turnDisplay = document.querySelector(".turn");
+    const boardDiv = document.querySelector(".board");
+
+    function drawRow(rowIndex) {
+        const rowDiv = document.createElement("div");
+        rowDiv.classList.add("row-" + rowIndex);
+        boardDiv.appendChild(rowDiv);
+        return rowDiv;
+    }
+
+    function drawCell(rowDiv, col) {
+        const cellEle = document.createElement("div");
+        cellEle.classList.add("cell");
+        cellEle.dataset.col = col;
+        rowDiv.appendChild(cellEle);
+    }
+
+    function displayTurn(playerName) {
+        turnDisplay.textContent = playerName + "'s turn to move!";
+    }
+
+    function drawMarker(row, col, marker) {
+        targetRow = document.querySelector(".row-" + row);
+        targetCell = targetRow.children[col];
+        targetCell.textContent = marker;
+    }
+
+    return { drawRow, drawCell, displayTurn, drawMarker };
+})();
+
+
+// ** BOARD
 const gameBoard = (function() {
     const rows = 3;
     const columns = 3;
@@ -5,8 +39,11 @@ const gameBoard = (function() {
 
     for (let i = 0; i < rows; i++) {
         board[i] = [];
+        // create rowDiv and returning it back to this function, to be passed into drawCell()
+        rowDiv = displayController.drawRow(i);
         for (let j = 0; j < columns; j++) {
             board[i].push(Cell());
+            displayController.drawCell(rowDiv, j);
         }
     }
 
@@ -16,6 +53,7 @@ const gameBoard = (function() {
 })();
 
 
+// ** CELL
 function Cell() {
     let value = null;
 
@@ -35,6 +73,7 @@ function Player(name, marker) {
 }
 
 
+// ** CONTROLLER
 function gameController() {
     const playerOne = Player("PlayerOne", "X");
     const playerTwo = Player("PlayerTwo", "O");
@@ -56,20 +95,24 @@ function gameController() {
 
     function playGame() {
         // get move from player
+        // todo: to replace setPlayerMove to be web interactive
         [selectedRow, selectedCol] = setPlayerMove();
         let selectedCell = board[selectedRow][selectedCol];
 
         // check if the target cell is available (is there a marker already on it?)
         // if cell not available, re-prompt for another input
         if (selectedCell.getValue() !== null) {
-            alert(`That slot has been filled,`, activePlayer.getName(), `please pick another one!`);
+            alert(`That slot has been filled,`, activePlayer.getName(), ` please pick another one!`);
+            // todo: to replace setPlayerMove to be web interactive
             [selectedRow, selectedCol] = setPlayerMove();
             selectedCell = board[selectedRow][selectedCol];
         }   
 
         // Drop the player's marker on the cell
-        selectedCell.addMarker(activePlayer.getMarker());
-
+        // todo: to consolidate both adding into database (Cell class) and 
+        // todo: drawing marker (dispayController class) on HTML into a single method
+        dropMarker(selectedCell);
+        
         // check for win condition via checkWinCondition
         if (gameOver()) {
             console.log("Game Over!");
@@ -88,8 +131,15 @@ function gameController() {
         return [selectedRow, selectedCol];
     }
 
+    function dropMarker(targetCell) {
+        marker = activePlayer.getMarker();
+        targetCell.addMarker(marker);
+        displayController.drawMarker(selectedRow, selectedCol, marker);
+    }
+
     function switchTurn() {
         activePlayer = (activePlayer === null || activePlayer === playerTwo) ? playerOne : playerTwo;
+        displayController.displayTurn(activePlayer.getName());
         return activePlayer;
     }
     
@@ -107,7 +157,7 @@ function gameController() {
             announceOutOfMove();
             return true;
         }
-        
+
         return false;
     }
 
@@ -153,7 +203,7 @@ function gameController() {
 
         for (let i = 0; i < winningCombinationArr.length; i++) {
             let combination = winningCombinationArr[i]; 
-            // console.log("Combination: ", combination);
+
             for (let j = 0; j < combination.length; j++) {
                 let cellVal = combination[j].getValue();
                 console.log("cell value: ", cellVal);
@@ -181,6 +231,7 @@ function gameController() {
         return true;
     }
 
+    // todo: to get displayController to congratulary message
     function announceWinner() {
         alert("Congratulations " + activePlayer.getName() + ", you just owned!");
     }
@@ -188,6 +239,6 @@ function gameController() {
     return { playGame };
 }
 
-// displayController (IIFE)
+
 game = gameController();
 game.playGame();
